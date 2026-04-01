@@ -1,0 +1,18 @@
+{
+  "name": "room-file-preview",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c red,cyan \"pnpm -C server dev\" \"pnpm -C client dev\"",
+    "build": "pnpm -C server build && pnpm -C client build",
+    "start": "pnpm -C server start",
+    "lint": "pnpm -C server lint && pnpm -C client lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
+
