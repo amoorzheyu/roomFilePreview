@@ -51,7 +51,7 @@ export function PdfViewer(props: Props) {
       .catch(() => {
         if (cancelled) return
         setStatus('error')
-        setError('PDF 加载失败。')
+        setError('PDF 加载失败')
       })
 
     return () => {
@@ -101,7 +101,7 @@ export function PdfViewer(props: Props) {
       }
     })().catch(() => {
       setStatus('error')
-      setError('PDF 渲染失败。')
+      setError('PDF 渲染失败')
     })
 
     return () => {
@@ -122,7 +122,7 @@ export function PdfViewer(props: Props) {
   if (status === 'error') {
     return (
       <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-5 text-sm text-rose-100">
-        {error ?? '加载失败。'}
+        {error ?? '加载失败'}
       </div>
     )
   }

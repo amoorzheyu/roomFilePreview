@@ -36,7 +36,7 @@ export function MdViewer(props: Props) {
       .catch(() => {
         if (cancelled) return
         setStatus('error')
-        setError('Markdown 加载失败。')
+        setError('Markdown 加载失败')
       })
 
     return () => {
@@ -61,7 +61,7 @@ export function MdViewer(props: Props) {
   if (status === 'error') {
     return (
       <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-5 text-sm text-rose-100">
-        {error ?? '加载失败。'}
+        {error ?? '加载失败'}
       </div>
     )
   }

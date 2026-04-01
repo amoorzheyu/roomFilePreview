@@ -74,7 +74,7 @@ export function RoomPage() {
       .catch(() => {
         if (cancelled) return
         setStatus('error')
-        setError('房间不存在或已关闭。')
+        setError('房间不存在或已关闭')
       })
 
     return () => {
@@ -247,7 +247,7 @@ export function RoomPage() {
 
   async function onUpload(file: File) {
     if (!ownerToken) {
-      setOwnerActionError('缺少房主 token，无法上传。请从创建房间的那台设备进入。')
+      setOwnerActionError('缺少房主 token，无法上传 请从创建房间的那台设备进入')
       return
     }
     setOwnerActionError(null)
@@ -257,7 +257,7 @@ export function RoomPage() {
       const st = await getRoomState(roomId)
       setState(st)
     } catch {
-      setOwnerActionError('上传失败，请确认文件类型为 PDF 或 Markdown。')
+      setOwnerActionError('上传失败 请确认文件类型为 PDF 或 Markdown')
     } finally {
       setUploadBusy(false)
     }
@@ -270,7 +270,7 @@ export function RoomPage() {
       const st = await getRoomState(roomId)
       setState(st)
     } catch {
-      setOwnerActionError('更新共享状态失败。')
+      setOwnerActionError('更新共享状态失败')
     }
   }
 
@@ -281,7 +281,7 @@ export function RoomPage() {
       const st = await getRoomState(roomId)
       setState(st)
     } catch {
-      setOwnerActionError('清空失败。')
+      setOwnerActionError('清空失败')
     }
   }
 
@@ -291,7 +291,7 @@ export function RoomPage() {
       await closeRoom({ roomId, ownerToken })
       nav('/', { replace: true })
     } catch {
-      setOwnerActionError('关闭房间失败。')
+      setOwnerActionError('关闭房间失败')
     }
   }
 
@@ -321,11 +321,11 @@ export function RoomPage() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <Broadcast size={14} weight="bold" />
-              {isOwner ? '你是房主' : '观众'}
+              {isOwner ? '房主' : '观众'}
             </div>
             {state ? (
               <div className="text-xs text-zinc-200/55">
-                共享：{state.shareEnabled ? '开启' : '暂停'} · 版本：{latestVersion}
+                {state.shareEnabled ? '共享中' : '已暂停'} · v{latestVersion}
               </div>
             ) : null}
           </div>
@@ -338,7 +338,7 @@ export function RoomPage() {
           </div>
         ) : status === 'error' ? (
           <div className="mt-10 rounded-[28px] border border-rose-500/25 bg-rose-500/10 p-6 text-sm text-rose-100">
-            {error ?? '加载失败。'}
+            {error ?? '加载失败'}
           </div>
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[0.72fr_0.28fr]">
@@ -357,11 +357,9 @@ export function RoomPage() {
                 }
               >
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <div className="text-sm font-medium text-zinc-100">预览</div>
+                <div className="text-sm font-medium text-zinc-100">内容</div>
                 <div className="flex items-center gap-3">
-                  <div className="text-xs text-zinc-200/55">
-                    {state?.contentMeta ? state.contentMeta.name : '暂无内容'}
-                  </div>
+                  <div className="text-xs text-zinc-200/55">{state?.contentMeta ? state.contentMeta.name : ''}</div>
                   <button
                     type="button"
                     onClick={onToggleMaximize}
@@ -395,10 +393,7 @@ export function RoomPage() {
                   <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-6">
                     <div className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-100">
                       <Eye size={18} weight="bold" />
-                      等待内容
-                    </div>
-                    <div className="text-sm text-zinc-200/60">
-                      房主上传 PDF 或 Markdown 后，会在这里渲染并同步滚动。
+                      暂无内容
                     </div>
                   </div>
                 ) : contentType === 'md' ? (
@@ -413,14 +408,11 @@ export function RoomPage() {
             <div className="grid gap-4">
               <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <div className="text-sm font-medium text-zinc-100">控制</div>
-                <div className="mt-1 text-xs text-zinc-200/55">
-                  只有房主可以上传与控制共享。
-                </div>
 
                 {isOwner ? (
                   <div className="mt-4 grid gap-3">
                     <label className="grid gap-2">
-                      <span className="text-xs text-zinc-200/55">上传 PDF / Markdown（覆盖）</span>
+                      <span className="text-xs text-zinc-200/55">上传</span>
                       <input
                         type="file"
                         accept=".pdf,.md,.markdown"
@@ -446,7 +438,7 @@ export function RoomPage() {
                         ) : (
                           <Eye size={18} weight="bold" />
                         )}
-                        {state?.shareEnabled ? '停止共享' : '恢复共享'}
+                        {state?.shareEnabled ? '暂停共享' : '继续共享'}
                       </span>
                       <UploadSimple size={18} weight="bold" className="opacity-60" />
                     </button>
@@ -480,15 +472,11 @@ export function RoomPage() {
                     ) : null}
                   </div>
                 ) : (
-                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-200/70">
-                    你在以观众身份观看。滚动会跟随房主同步。
-                  </div>
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-200/70">仅查看</div>
                 )}
               </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 text-xs text-zinc-200/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                房主滚动会同步给观众。若你是观众，本地滚动会被下一次同步覆盖。
-              </div>
+              <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 text-xs text-zinc-200/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">滚动跟随房主</div>
             </div>
           </div>
         )}
