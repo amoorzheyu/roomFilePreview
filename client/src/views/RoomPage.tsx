@@ -4,6 +4,8 @@ import {
   ArrowLeft,
   ArrowsInSimple,
   ArrowsOutSimple,
+  CornersIn,
+  CornersOut,
   Broadcast,
   Eye,
   EyeSlash,
@@ -37,6 +39,7 @@ export function RoomPage() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMaximized, setIsMaximized] = useState(false)
 
   const ownerToken = useMemo(() => (roomId ? loadOwnerToken(roomId) : null), [roomId])
 
@@ -90,6 +93,17 @@ export function RoomPage() {
     }
   }, [])
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setIsMaximized(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
+
   async function onToggleFullscreen() {
     const el = scrollContainerRef.current
     if (!el) return
@@ -99,6 +113,10 @@ export function RoomPage() {
     } else {
       await el.requestFullscreen()
     }
+  }
+
+  function onToggleMaximize() {
+    setIsMaximized((v) => !v)
   }
 
   useEffect(() => {
@@ -324,13 +342,35 @@ export function RoomPage() {
           </div>
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[0.72fr_0.28fr]">
-            <div className="rounded-[28px] border border-white/10 bg-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div
+              className={
+                isMaximized
+                  ? 'fixed inset-0 z-40 grid bg-[#0b0d12]/92 p-4 backdrop-blur-md md:p-6'
+                  : 'rounded-[28px] border border-white/10 bg-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)]'
+              }
+            >
+              <div
+                className={
+                  isMaximized
+                    ? 'flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)]'
+                    : ''
+                }
+              >
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
                 <div className="text-sm font-medium text-zinc-100">预览</div>
                 <div className="flex items-center gap-3">
                   <div className="text-xs text-zinc-200/55">
                     {state?.contentMeta ? state.contentMeta.name : '暂无内容'}
                   </div>
+                  <button
+                    type="button"
+                    onClick={onToggleMaximize}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-100 transition hover:bg-white/8 active:translate-y-[1px]"
+                    title={isMaximized ? '还原' : '最大化'}
+                  >
+                    {isMaximized ? <CornersIn size={16} weight="bold" /> : <CornersOut size={16} weight="bold" />}
+                    {isMaximized ? '还原' : '最大化'}
+                  </button>
                   <button
                     type="button"
                     onClick={onToggleFullscreen}
@@ -349,7 +389,7 @@ export function RoomPage() {
 
               <div
                 ref={scrollContainerRef}
-                className="max-h-[72dvh] overflow-auto px-5 py-5"
+                className={isMaximized ? 'flex-1 overflow-auto px-5 py-5' : 'max-h-[72dvh] overflow-auto px-5 py-5'}
               >
                 {!state?.contentMeta ? (
                   <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-6">
@@ -366,6 +406,7 @@ export function RoomPage() {
                 ) : (
                   <PdfViewer url={pdfUrl(roomId)} version={state.contentMeta.version} />
                 )}
+              </div>
               </div>
             </div>
 
