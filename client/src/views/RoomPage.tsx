@@ -205,7 +205,6 @@ export function RoomPage() {
       sockRef.current = null
       sock.disconnect()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, ownerToken, status, nav])
 
   useEffect(() => {

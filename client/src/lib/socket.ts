@@ -18,7 +18,10 @@ export type ServerToClientEvents = {
 }
 
 export type ClientToServerEvents = {
-  'room:join': (payload: { roomId: string; ownerToken?: string }, ack?: (resp: any) => void) => void
+  'room:join': (
+    payload: { roomId: string; ownerToken?: string },
+    ack?: (resp: unknown) => void,
+  ) => void
   'room:scroll': (payload: {
     roomId: string
     version: number
