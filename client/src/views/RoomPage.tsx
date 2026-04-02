@@ -9,12 +9,14 @@ import {
   Broadcast,
   Eye,
   EyeSlash,
+  GithubLogo,
   UploadSimple,
   X,
 } from '@phosphor-icons/react'
 
 import type { RoomPublicState } from '../lib/api'
 import { clearContent, closeRoom, getRoomState, pdfUrl, setShare, uploadRoomContent } from '../lib/api'
+import { GITHUB_REPO_URL } from '../lib/config'
 import { loadOwnerToken } from '../lib/roomTokens'
 import { createSocket } from '../lib/socket'
 import { MdViewer } from '../components/MdViewer'
@@ -319,6 +321,17 @@ export function RoomPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-100 transition hover:bg-white/8 active:translate-y-[1px]"
+              aria-label="在 GitHub 查看项目"
+              title="GitHub"
+            >
+              <GithubLogo size={16} weight="bold" />
+              GitHub
+            </a>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <Broadcast size={14} weight="bold" />
               {isOwner ? '房主' : '观众'}

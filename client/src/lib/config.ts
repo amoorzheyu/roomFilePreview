@@ -6,3 +6,5 @@ export const SERVER_SOCKET_BASE =
   (import.meta.env.VITE_SERVER_SOCKET_BASE as string | undefined) ??
   `http://${window.location.hostname}:8787`
 
+export const GITHUB_REPO_URL = 'https://github.com/amoorzheyu/roomFilePreview'
+

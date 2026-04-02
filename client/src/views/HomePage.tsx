@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, HashStraight, Plus } from '@phosphor-icons/react'
+import { ArrowRight, GithubLogo, HashStraight, Plus } from '@phosphor-icons/react'
 
 import { createRoom } from '../lib/api'
+import { GITHUB_REPO_URL } from '../lib/config'
 import { saveOwnerToken } from '../lib/roomTokens'
 
 function normalizeRoomId(input: string) {
@@ -53,9 +54,22 @@ export function HomePage() {
       <div className="flex min-h-[100dvh] items-center">
         <div className="mx-auto w-full grid max-w-[1040px] grid-cols-1 gap-6 px-6 py-12 md:grid-cols-[1fr_420px] md:gap-4 md:px-10">
         <div className="relative">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-            <HashStraight size={14} weight="bold" />
-            房主控制滚动
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-200/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <HashStraight size={14} weight="bold" />
+              房主控制滚动
+            </div>
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-200/90 transition hover:bg-white/8 active:translate-y-[1px] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+              aria-label="在 GitHub 查看项目"
+              title="GitHub"
+            >
+              <GithubLogo size={14} weight="bold" />
+              GitHub
+            </a>
           </div>
 
           <h1 className="mt-6 text-4xl font-semibold tracking-tight text-zinc-50 md:text-6xl md:leading-[0.98]">
