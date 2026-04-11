@@ -323,6 +323,7 @@ export function RoomPage() {
   }, [isOwner, roomId, state, status, contentShowsDesktopOnly])
 
   const [uploadBusy, setUploadBusy] = useState(false)
+  const [uploadPickName, setUploadPickName] = useState<string | null>(null)
   const [ownerActionError, setOwnerActionError] = useState<string | null>(null)
 
   const [annotateTool, setAnnotateTool] = useState<AnnotateTool>('pan')
@@ -370,6 +371,7 @@ export function RoomPage() {
       await uploadRoomContent({ roomId, ownerToken, file })
       const st = await getRoomState(roomId)
       setState(st)
+      setUploadPickName(null)
     } catch {
       setOwnerActionError('上传失败 请确认文件类型为 PDF 或 Markdown')
     } finally {
@@ -394,6 +396,7 @@ export function RoomPage() {
       await clearContent({ roomId, ownerToken })
       const st = await getRoomState(roomId)
       setState(st)
+      setUploadPickName(null)
     } catch {
       setOwnerActionError('清空失败')
     }
@@ -494,15 +497,11 @@ export function RoomPage() {
                 <div className="flex shrink-0 items-center justify-between border-b border-warm-charcoal px-5 py-4">
                   <div className="text-sm font-medium text-snow">内容</div>
                   <div className="flex items-center gap-3">
-                    <div className="text-xs text-steel">
-                      {contentShowsDesktopOnly
-                        ? isOwner
-                          ? '桌面投屏'
-                          : '接收房主桌面'
-                        : state?.contentMeta
-                          ? state.contentMeta.name
-                          : ''}
-                    </div>
+                    {contentShowsDesktopOnly ? (
+                      <div className="text-xs text-steel">
+                        {isOwner ? '桌面投屏' : '接收房主桌面'}
+                      </div>
+                    ) : null}
                     <button
                       type="button"
                       onClick={onToggleMaximize}
@@ -664,21 +663,42 @@ export function RoomPage() {
 
                 {isOwner ? (
                   <div className="mt-4 grid gap-3">
-                    <label className="grid gap-2">
-                      <span className="text-xs text-steel">上传</span>
-                      <input
-                        type="file"
-                        accept=".pdf,.md,.markdown"
-                        disabled={uploadBusy}
-                        onChange={(e) => {
-                          const f = e.target.files?.[0]
-                          if (!f) return
-                          onUpload(f)
-                          e.currentTarget.value = ''
-                        }}
-                        className="block w-full rounded-md border border-warm-charcoal bg-abyss px-4 py-3 text-sm text-snow file:mr-4 file:rounded-md file:border-0 file:bg-warm-charcoal file:px-3 file:py-2 file:text-xs file:font-semibold file:text-snow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
-                      />
-                    </label>
+                    <div className="grid gap-2">
+                      <span className="text-xs text-steel">上传文件</span>
+                      <label
+                        className={`flex min-h-[46px] w-full items-center gap-3 rounded-md border border-warm-charcoal bg-abyss px-3 py-2 text-sm text-snow focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500/50 ${
+                          uploadBusy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                        }`}
+                      >
+                        <span
+                          className="min-w-0 flex-1 truncate text-xs text-parchment"
+                          title={
+                            state?.contentMeta?.name ??
+                            uploadPickName ??
+                            undefined
+                          }
+                          aria-live="polite"
+                        >
+                          {state?.contentMeta?.name ?? uploadPickName ?? '未选择任何文件'}
+                        </span>
+                        <span className="shrink-0 rounded-md bg-warm-charcoal px-3 py-2 text-xs font-semibold text-snow">
+                          选择文件
+                        </span>
+                        <input
+                          type="file"
+                          accept=".pdf,.md,.markdown"
+                          disabled={uploadBusy}
+                          className="sr-only"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (!f) return
+                            setUploadPickName(f.name)
+                            onUpload(f)
+                            e.currentTarget.value = ''
+                          }}
+                        />
+                      </label>
+                    </div>
 
                     <div className="grid gap-2 border-t border-warm-charcoal pt-3">
                       <div className="text-xs font-medium text-steel">桌面投屏</div>
