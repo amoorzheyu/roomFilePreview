@@ -664,7 +664,7 @@ export function RoomPage() {
                 {isOwner ? (
                   <div className="mt-4 grid gap-3">
                     <div className="grid gap-2">
-                      <span className="text-xs text-steel">上传文件</span>
+                      <span className="text-xs text-steel">文件共享</span>
                       <label
                         className={`flex min-h-[46px] w-full items-center gap-3 rounded-md border border-warm-charcoal bg-abyss px-3 py-2 text-sm text-snow focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500/50 ${
                           uploadBusy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
@@ -701,6 +701,34 @@ export function RoomPage() {
                     </div>
 
                     <div className="grid gap-2 border-t border-warm-charcoal pt-3">
+                      <button
+                        type="button"
+                        onClick={() => onToggleShare(!state?.shareEnabled)}
+                        className="inline-flex w-full items-center rounded-md border border-warm-charcoal bg-carbon px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          {state?.shareEnabled ? (
+                            <EyeSlash size={18} weight="bold" />
+                          ) : (
+                            <Eye size={18} weight="bold" />
+                          )}
+                          {state?.shareEnabled ? '暂停文件共享' : '继续文件共享'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={onClear}
+                        className="inline-flex w-full items-center justify-between rounded-md border border-warm-charcoal bg-abyss px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/30 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <X size={18} weight="bold" />
+                          清空内容
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="grid gap-2 border-t border-warm-charcoal pt-3">
                       <div className="text-xs font-medium text-steel">桌面投屏</div>
                       <button
                         type="button"
@@ -724,34 +752,6 @@ export function RoomPage() {
                           {desktopError}
                         </div>
                       ) : null}
-                    </div>
-
-                    <div className="grid gap-2 border-t border-warm-charcoal pt-3">
-                      <button
-                        type="button"
-                        onClick={() => onToggleShare(!state?.shareEnabled)}
-                        className="inline-flex w-full items-center rounded-md border border-warm-charcoal bg-carbon px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          {state?.shareEnabled ? (
-                            <EyeSlash size={18} weight="bold" />
-                          ) : (
-                            <Eye size={18} weight="bold" />
-                          )}
-                          {state?.shareEnabled ? '暂停共享' : '继续共享'}
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={onClear}
-                        className="inline-flex w-full items-center justify-between rounded-md border border-warm-charcoal bg-abyss px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/30 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <X size={18} weight="bold" />
-                          清空内容
-                        </span>
-                      </button>
                     </div>
 
                     <button
