@@ -9,3 +9,4 @@ client/dist
 server/node_modules
 server/dist
 .cursor/
+DESIGN.md

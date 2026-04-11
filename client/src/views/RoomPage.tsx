@@ -306,14 +306,14 @@ export function RoomPage() {
             <button
               type="button"
               onClick={() => nav('/')}
-              className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-100 transition hover:bg-white/8 active:translate-y-[1px]"
+              className="inline-flex items-center gap-2 rounded-md border border-warm-charcoal bg-carbon px-3 py-2 text-sm text-snow transition hover:bg-black/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
             >
               <ArrowLeft size={16} weight="bold" />
               返回
             </button>
             <div>
-              <div className="text-xs text-zinc-200/55">房间号</div>
-              <div className="font-mono text-lg font-semibold tracking-widest text-zinc-50">
+              <div className="text-xs text-steel">房间号</div>
+              <div className="font-mono text-lg font-semibold tracking-widest text-snow">
                 {roomId}
               </div>
             </div>
@@ -324,19 +324,19 @@ export function RoomPage() {
               href={GITHUB_REPO_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-100 transition hover:bg-white/8 active:translate-y-[1px]"
+              className="inline-flex items-center gap-2 rounded-md border border-warm-charcoal bg-carbon px-3 py-2 text-xs font-semibold text-snow transition hover:bg-black/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
               aria-label="在 GitHub 查看项目"
               title="GitHub"
             >
               <GithubLogo size={16} weight="bold" />
               GitHub
             </a>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <Broadcast size={14} weight="bold" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-warm-charcoal bg-carbon px-3 py-1 text-xs text-parchment shadow-ambient">
+              <Broadcast size={14} weight="bold" className="text-steel" />
               {isOwner ? '房主' : '观众'}
             </div>
             {state ? (
-              <div className="text-xs text-zinc-200/55">
+              <div className="text-xs text-steel">
                 {state.shareEnabled ? '共享中' : '已暂停'} · v{latestVersion}
               </div>
             ) : null}
@@ -345,11 +345,11 @@ export function RoomPage() {
 
         {status === 'loading' ? (
           <div className="mt-8 grid gap-4">
-            <div className="h-10 w-[320px] animate-pulse rounded-2xl bg-white/5" />
-            <div className="h-[520px] w-full animate-pulse rounded-[28px] bg-white/5" />
+            <div className="h-10 w-[320px] animate-pulse rounded-lg bg-carbon ring-1 ring-warm-charcoal" />
+            <div className="h-[520px] w-full animate-pulse rounded-lg bg-carbon ring-1 ring-warm-charcoal" />
           </div>
         ) : status === 'error' ? (
-          <div className="mt-10 rounded-[28px] border border-rose-500/25 bg-rose-500/10 p-6 text-sm text-rose-100">
+          <div className="mt-10 rounded-lg border border-danger-border bg-danger-bg p-6 text-sm text-danger">
             {error ?? '加载失败'}
           </div>
         ) : (
@@ -357,74 +357,78 @@ export function RoomPage() {
             <div
               className={
                 isMaximized
-                  ? 'fixed inset-0 z-40 grid bg-[#0b0d12]/92 p-4 backdrop-blur-md md:p-6'
-                  : 'rounded-[28px] border border-white/10 bg-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)]'
+                  ? 'fixed inset-0 z-40 grid bg-abyss/95 p-4 backdrop-blur-sm md:p-6'
+                  : 'rounded-lg border border-warm-charcoal bg-carbon shadow-ambient'
               }
             >
               <div
                 className={
                   isMaximized
-                    ? 'flex h-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)]'
+                    ? 'flex h-full flex-col overflow-hidden rounded-lg border border-warm-charcoal bg-carbon shadow-dramatic'
                     : ''
                 }
               >
-              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <div className="text-sm font-medium text-zinc-100">内容</div>
-                <div className="flex items-center gap-3">
-                  <div className="text-xs text-zinc-200/55">{state?.contentMeta ? state.contentMeta.name : ''}</div>
-                  <button
-                    type="button"
-                    onClick={onToggleMaximize}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-100 transition hover:bg-white/8 active:translate-y-[1px]"
-                    title={isMaximized ? '还原' : '最大化'}
-                  >
-                    {isMaximized ? <CornersIn size={16} weight="bold" /> : <CornersOut size={16} weight="bold" />}
-                    {isMaximized ? '还原' : '最大化'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onToggleFullscreen}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-100 transition hover:bg-white/8 active:translate-y-[1px]"
-                    title={isFullscreen ? '退出全屏' : '全屏'}
-                  >
-                    {isFullscreen ? (
-                      <ArrowsInSimple size={16} weight="bold" />
-                    ) : (
-                      <ArrowsOutSimple size={16} weight="bold" />
-                    )}
-                    {isFullscreen ? '退出全屏' : '全屏'}
-                  </button>
-                </div>
-              </div>
-
-              <div
-                ref={scrollContainerRef}
-                className={isMaximized ? 'flex-1 overflow-auto px-5 py-5' : 'max-h-[72dvh] overflow-auto px-5 py-5'}
-              >
-                {!state?.contentMeta ? (
-                  <div className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-6">
-                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-100">
-                      <Eye size={18} weight="bold" />
-                      暂无内容
-                    </div>
+                <div className="flex items-center justify-between border-b border-warm-charcoal px-5 py-4">
+                  <div className="text-sm font-medium text-snow">内容</div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-steel">{state?.contentMeta ? state.contentMeta.name : ''}</div>
+                    <button
+                      type="button"
+                      onClick={onToggleMaximize}
+                      className="inline-flex items-center gap-2 rounded-md border border-warm-charcoal bg-abyss px-3 py-2 text-xs font-semibold text-snow transition hover:bg-black/30 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                      title={isMaximized ? '还原' : '最大化'}
+                    >
+                      {isMaximized ? <CornersIn size={16} weight="bold" /> : <CornersOut size={16} weight="bold" />}
+                      {isMaximized ? '还原' : '最大化'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onToggleFullscreen}
+                      className="inline-flex items-center gap-2 rounded-md border border-warm-charcoal bg-abyss px-3 py-2 text-xs font-semibold text-snow transition hover:bg-black/30 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                      title={isFullscreen ? '退出全屏' : '全屏'}
+                    >
+                      {isFullscreen ? (
+                        <ArrowsInSimple size={16} weight="bold" />
+                      ) : (
+                        <ArrowsOutSimple size={16} weight="bold" />
+                      )}
+                      {isFullscreen ? '退出全屏' : '全屏'}
+                    </button>
                   </div>
-                ) : contentType === 'md' ? (
-                  <MdViewer roomId={roomId} version={state.contentMeta.version} />
-                ) : (
-                  <PdfViewer url={pdfUrl(roomId)} version={state.contentMeta.version} />
-                )}
-              </div>
+                </div>
+
+                <div
+                  ref={scrollContainerRef}
+                  className={isMaximized ? 'flex-1 overflow-auto px-5 py-5' : 'max-h-[72dvh] overflow-auto px-5 py-5'}
+                >
+                  {!state?.contentMeta ? (
+                    <div className="grid gap-2 rounded-lg border border-warm-charcoal bg-abyss p-6">
+                      <div className="inline-flex items-center gap-2 text-sm font-semibold text-snow">
+                        <Eye size={18} weight="bold" className="text-steel" />
+                        暂无内容
+                      </div>
+                    </div>
+                  ) : contentType === 'md' ? (
+                    <MdViewer roomId={roomId} version={state.contentMeta.version} />
+                  ) : (
+                    <PdfViewer url={pdfUrl(roomId)} version={state.contentMeta.version} />
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="grid gap-4">
-              <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                <div className="text-sm font-medium text-zinc-100">控制</div>
+              <div
+                className={`rounded-lg border bg-carbon p-5 shadow-ambient ${
+                  state?.shareEnabled ? 'border-signal border-2' : 'border-warm-charcoal'
+                }`}
+              >
+                <div className="text-sm font-medium text-snow">控制</div>
 
                 {isOwner ? (
                   <div className="mt-4 grid gap-3">
                     <label className="grid gap-2">
-                      <span className="text-xs text-zinc-200/55">上传</span>
+                      <span className="text-xs text-steel">上传</span>
                       <input
                         type="file"
                         accept=".pdf,.md,.markdown"
@@ -435,14 +439,14 @@ export function RoomPage() {
                           onUpload(f)
                           e.currentTarget.value = ''
                         }}
-                        className="block w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-zinc-100 file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-zinc-100"
+                        className="block w-full rounded-md border border-warm-charcoal bg-abyss px-4 py-3 text-sm text-snow file:mr-4 file:rounded-md file:border-0 file:bg-warm-charcoal file:px-3 file:py-2 file:text-xs file:font-semibold file:text-snow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
                       />
                     </label>
 
                     <button
                       type="button"
                       onClick={() => onToggleShare(!state?.shareEnabled)}
-                      className="inline-flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-zinc-100 transition hover:bg-white/8 active:translate-y-[1px]"
+                      className="inline-flex w-full items-center justify-between rounded-md border border-warm-charcoal bg-carbon px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
                     >
                       <span className="inline-flex items-center gap-2">
                         {state?.shareEnabled ? (
@@ -452,13 +456,13 @@ export function RoomPage() {
                         )}
                         {state?.shareEnabled ? '暂停共享' : '继续共享'}
                       </span>
-                      <UploadSimple size={18} weight="bold" className="opacity-60" />
+                      <UploadSimple size={18} weight="bold" className="text-steel" />
                     </button>
 
                     <button
                       type="button"
                       onClick={onClear}
-                      className="inline-flex w-full items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-semibold text-zinc-100 transition hover:bg-white/8 active:translate-y-[1px]"
+                      className="inline-flex w-full items-center justify-between rounded-md border border-warm-charcoal bg-abyss px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/30 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
                     >
                       <span className="inline-flex items-center gap-2">
                         <X size={18} weight="bold" />
@@ -469,7 +473,7 @@ export function RoomPage() {
                     <button
                       type="button"
                       onClick={onCloseRoom}
-                      className="inline-flex w-full items-center justify-between rounded-2xl border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/14 active:translate-y-[1px]"
+                      className="inline-flex w-full items-center justify-between rounded-md border border-danger-border bg-danger-bg px-4 py-3 text-sm font-semibold text-danger transition hover:opacity-90 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
                     >
                       <span className="inline-flex items-center gap-2">
                         <X size={18} weight="bold" />
@@ -478,17 +482,21 @@ export function RoomPage() {
                     </button>
 
                     {ownerActionError ? (
-                      <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">
+                      <div className="rounded-lg border border-danger-border bg-danger-bg px-4 py-3 text-xs text-danger">
                         {ownerActionError}
                       </div>
                     ) : null}
                   </div>
                 ) : (
-                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-200/70">仅查看</div>
+                  <div className="mt-4 rounded-lg border border-warm-charcoal bg-abyss p-4 text-sm text-parchment">
+                    仅查看
+                  </div>
                 )}
               </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-white/5 p-5 text-xs text-zinc-200/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">滚动跟随房主</div>
+              <div className="rounded-lg border border-warm-charcoal bg-carbon p-5 text-xs text-steel shadow-ambient">
+                滚动跟随房主
+              </div>
             </div>
           </div>
         )}

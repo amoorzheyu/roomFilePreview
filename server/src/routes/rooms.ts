@@ -17,6 +17,16 @@ import { emitRoom } from '../realtime/bus.js'
 
 export const roomsRouter = Router()
 
+/** Multer/busboy often expose UTF-8 bytes as ISO-8859-1 code units; recover real UTF-8 without corrupting already-correct Unicode. */
+function normalizeUploadedFilename(name: string): string {
+  if (!name) return 'upload'
+  const onlyByteSizedChars = [...name].every((c) => c.charCodeAt(0) < 0x100)
+  if (!onlyByteSizedChars) return name
+  const recovered = Buffer.from(name, 'latin1').toString('utf8')
+  if (recovered.includes('\uFFFD')) return name
+  return recovered
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
@@ -49,9 +59,11 @@ roomsRouter.get('/:roomId/content/pdf', (req, res) => {
       return res.status(404).json({ error: 'no_pdf' })
     }
     res.setHeader('Content-Type', 'application/pdf')
+    const pdfName = room.content.name
+    const asciiFallback = pdfName.replace(/[^\x20-\x7E]/g, '_') || 'document.pdf'
     res.setHeader(
       'Content-Disposition',
-      `inline; filename="${encodeURIComponent(room.content.name)}"`,
+      `inline; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(pdfName)}`,
     )
     res.send(room.content.bytes)
   } catch {
@@ -124,7 +136,7 @@ roomsRouter.post('/:roomId/content', upload.single('file'), (req, res) => {
     const file = req.file
     if (!file) return res.status(400).json({ error: 'missing_file' })
 
-    const name = file.originalname || 'upload'
+    const name = normalizeUploadedFilename(file.originalname || 'upload')
     const lower = name.toLowerCase()
     if (lower.endsWith('.pdf')) {
       setPdf(room, name, file.buffer)

@@ -113,15 +113,15 @@ export function PdfViewer(props: Props) {
   if (status === 'loading') {
     return (
       <div className="grid gap-3">
-        <div className="h-9 w-[220px] animate-pulse rounded-2xl bg-white/5" />
-        <div className="h-[420px] animate-pulse rounded-3xl bg-white/5" />
+        <div className="h-9 w-[220px] animate-pulse rounded-lg bg-carbon ring-1 ring-warm-charcoal" />
+        <div className="h-[420px] animate-pulse rounded-lg bg-carbon ring-1 ring-warm-charcoal" />
       </div>
     )
   }
 
   if (status === 'error') {
     return (
-      <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-5 text-sm text-rose-100">
+      <div className="rounded-lg border border-danger-border bg-danger-bg p-5 text-sm text-danger">
         {error ?? '加载失败'}
       </div>
     )
@@ -129,8 +129,8 @@ export function PdfViewer(props: Props) {
 
   return (
     <div ref={rootRef} className="grid gap-5">
-      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-200/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-        <FilePdf size={14} weight="bold" />
+      <div className="inline-flex items-center gap-2 rounded-full border border-warm-charcoal bg-carbon px-3 py-1 text-xs text-parchment shadow-ambient">
+        <FilePdf size={14} weight="bold" className="text-steel" />
         共 {doc?.numPages ?? 0} 页
       </div>
 
@@ -141,7 +141,7 @@ export function PdfViewer(props: Props) {
               ref={(el) => {
                 p.ref = el
               }}
-              className="rounded-2xl bg-white shadow-[0_20px_40px_-18px_rgba(0,0,0,0.55)]"
+              className="rounded-lg bg-white shadow-dramatic"
             />
           </div>
         ))}
