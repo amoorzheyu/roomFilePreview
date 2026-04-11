@@ -301,9 +301,9 @@ export function RoomPage() {
   const contentType = state?.contentMeta?.type
 
   return (
-    <div className="min-h-[100dvh]">
-      <div className="mx-auto max-w-[1400px] px-6 py-6 md:px-10">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="flex min-h-[100dvh] flex-col lg:h-[100dvh] lg:max-h-[100dvh] lg:overflow-hidden">
+      <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-6 md:px-10 lg:min-h-0">
+        <div className="flex shrink-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -346,31 +346,31 @@ export function RoomPage() {
         </div>
 
         {status === 'loading' ? (
-          <div className="mt-8 grid gap-4">
+          <div className="grid gap-4">
             <div className="h-10 w-[320px] animate-pulse rounded-lg bg-carbon ring-1 ring-warm-charcoal" />
             <div className="h-[520px] w-full animate-pulse rounded-lg bg-carbon ring-1 ring-warm-charcoal" />
           </div>
         ) : status === 'error' ? (
-          <div className="mt-10 rounded-lg border border-danger-border bg-danger-bg p-6 text-sm text-danger">
+          <div className="rounded-lg border border-danger-border bg-danger-bg p-6 text-sm text-danger">
             {error ?? '加载失败'}
           </div>
         ) : (
-          <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[0.72fr_0.28fr]">
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[0.72fr_0.28fr]">
             <div
               className={
                 isMaximized
                   ? 'fixed inset-0 z-40 grid bg-abyss/95 p-4 backdrop-blur-sm md:p-6'
-                  : 'rounded-lg border border-warm-charcoal bg-carbon shadow-ambient'
+                  : 'flex min-h-0 flex-col lg:h-full lg:min-h-0'
               }
             >
               <div
                 className={
                   isMaximized
-                    ? 'flex h-full flex-col overflow-hidden rounded-lg border border-warm-charcoal bg-carbon shadow-dramatic'
-                    : ''
+                    ? 'flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-warm-charcoal bg-carbon shadow-dramatic'
+                    : 'flex min-h-0 flex-1 flex-col rounded-lg border border-warm-charcoal bg-carbon shadow-ambient'
                 }
               >
-                <div className="flex items-center justify-between border-b border-warm-charcoal px-5 py-4">
+                <div className="flex shrink-0 items-center justify-between border-b border-warm-charcoal px-5 py-4">
                   <div className="text-sm font-medium text-snow">内容</div>
                   <div className="flex items-center gap-3">
                     <div className="text-xs text-steel">{state?.contentMeta ? state.contentMeta.name : ''}</div>
@@ -401,7 +401,7 @@ export function RoomPage() {
 
                 <div
                   ref={scrollContainerRef}
-                  className={isMaximized ? 'flex-1 overflow-auto px-5 py-5' : 'max-h-[72dvh] overflow-auto px-5 py-5'}
+                  className="min-h-0 flex-1 overflow-auto px-5 py-5"
                 >
                   {!state?.contentMeta ? (
                     <div className="grid gap-2 rounded-lg border border-warm-charcoal bg-abyss p-6">
@@ -419,7 +419,7 @@ export function RoomPage() {
               </div>
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid min-h-0 gap-4">
               {!isOwner && state ? (
                 <div
                   className={`rounded-lg p-4 shadow-ambient ${
