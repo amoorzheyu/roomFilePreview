@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FilePdf } from '@phosphor-icons/react'
 import { GlobalWorkerOptions, getDocument, type PDFDocumentProxy } from 'pdfjs-dist'
 import workerSrc from 'pdfjs-dist/build/pdf.worker.mjs?url'
 
@@ -112,10 +111,7 @@ export function PdfViewer(props: Props) {
 
   if (status === 'loading') {
     return (
-      <div className="grid gap-3">
-        <div className="h-9 w-[220px] animate-pulse rounded-lg bg-carbon ring-1 ring-warm-charcoal" />
-        <div className="h-[420px] animate-pulse rounded-lg bg-carbon ring-1 ring-warm-charcoal" />
-      </div>
+      <div className="h-[420px] w-full animate-pulse rounded-lg bg-carbon ring-1 ring-warm-charcoal" />
     )
   }
 
@@ -129,23 +125,16 @@ export function PdfViewer(props: Props) {
 
   return (
     <div ref={rootRef} className="grid gap-5">
-      <div className="inline-flex items-center gap-2 rounded-full border border-warm-charcoal bg-carbon px-3 py-1 text-xs text-parchment shadow-ambient">
-        <FilePdf size={14} weight="bold" className="text-steel" />
-        共 {doc?.numPages ?? 0} 页
-      </div>
-
-      <div className="grid gap-5">
-        {pages.map((p) => (
-          <div key={p.pageNumber} className="grid justify-center">
-            <canvas
-              ref={(el) => {
-                p.ref = el
-              }}
-              className="rounded-lg bg-white shadow-dramatic"
-            />
-          </div>
-        ))}
-      </div>
+      {pages.map((p) => (
+        <div key={p.pageNumber} className="grid justify-center">
+          <canvas
+            ref={(el) => {
+              p.ref = el
+            }}
+            className="rounded-lg bg-white shadow-dramatic"
+          />
+        </div>
+      ))}
     </div>
   )
 }
