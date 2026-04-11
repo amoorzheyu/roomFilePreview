@@ -12,7 +12,6 @@ import {
   GithubLogo,
   PauseCircle,
   PlayCircle,
-  UploadSimple,
   X,
 } from '@phosphor-icons/react'
 
@@ -488,7 +487,7 @@ export function RoomPage() {
                     <button
                       type="button"
                       onClick={() => onToggleShare(!state?.shareEnabled)}
-                      className="inline-flex w-full items-center justify-between rounded-md border border-warm-charcoal bg-carbon px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                      className="inline-flex w-full items-center rounded-md border border-warm-charcoal bg-carbon px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
                     >
                       <span className="inline-flex items-center gap-2">
                         {state?.shareEnabled ? (
@@ -498,7 +497,6 @@ export function RoomPage() {
                         )}
                         {state?.shareEnabled ? '暂停共享' : '继续共享'}
                       </span>
-                      <UploadSimple size={18} weight="bold" className="text-steel" />
                     </button>
 
                     <button
