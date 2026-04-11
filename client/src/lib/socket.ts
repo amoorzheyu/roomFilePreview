@@ -3,6 +3,13 @@ import { io, type Socket } from 'socket.io-client'
 import { SERVER_SOCKET_BASE } from './config'
 import type { RoomAnnotationStroke, RoomAnnotationText, RoomPublicState } from './api'
 
+export type WebrtcIceCandidatePayload = {
+  candidate: string
+  sdpMid?: string | null
+  sdpMLineIndex?: number | null
+  [key: string]: unknown
+}
+
 export type ServerToClientEvents = {
   'room:state': (payload: { state: RoomPublicState; isOwner: boolean }) => void
   'room:contentChanged': (payload: {
@@ -20,6 +27,12 @@ export type ServerToClientEvents = {
   }) => void
   'room:closed': () => void
   'room:error': (payload: { error: string }) => void
+  'webrtc:requestOffer': (payload: { viewerSocketId: string }) => void
+  'webrtc:sharingOn': () => void
+  'webrtc:sharingOff': () => void
+  'webrtc:offer': (payload: { sdp: string; fromSocketId: string }) => void
+  'webrtc:answer': (payload: { sdp: string; fromSocketId: string }) => void
+  'webrtc:candidate': (payload: { candidate: WebrtcIceCandidatePayload; fromSocketId: string }) => void
 }
 
 export type ClientToServerEvents = {
@@ -40,6 +53,16 @@ export type ClientToServerEvents = {
     texts: RoomAnnotationText[]
   }) => void
   'room:close': (payload: { roomId: string }) => void
+  'webrtc:requestOffer': (payload: { roomId: string }) => void
+  'webrtc:notifySharing': (payload: { roomId: string }) => void
+  'webrtc:notifySharingStopped': (payload: { roomId: string }) => void
+  'webrtc:offer': (payload: { roomId: string; targetSocketId: string; sdp: string }) => void
+  'webrtc:answer': (payload: { roomId: string; targetSocketId: string; sdp: string }) => void
+  'webrtc:candidate': (payload: {
+    roomId: string
+    targetSocketId: string
+    candidate: WebrtcIceCandidatePayload
+  }) => void
 }
 
 export function createSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {

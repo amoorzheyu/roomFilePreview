@@ -49,6 +49,42 @@ const annotationsSetSchema = z.object({
   texts: z.array(textAnnSchema).max(600),
 })
 
+const webrtcRoomIdSchema = z.object({
+  roomId: z.string().min(1),
+})
+
+const webrtcOfferSchema = z.object({
+  roomId: z.string().min(1),
+  targetSocketId: z.string().min(1),
+  sdp: z.string().min(1).max(200_000),
+})
+
+const webrtcAnswerSchema = z.object({
+  roomId: z.string().min(1),
+  targetSocketId: z.string().min(1),
+  sdp: z.string().min(1).max(200_000),
+})
+
+const webrtcCandidateSchema = z.object({
+  roomId: z.string().min(1),
+  targetSocketId: z.string().min(1),
+  candidate: z
+    .object({
+      candidate: z.string().optional(),
+      sdpMid: z.string().nullable().optional(),
+      sdpMLineIndex: z.number().nullable().optional(),
+    })
+    .passthrough(),
+})
+
+type SocketMeta = { roomId: string; isOwner: boolean }
+const socketMetaById = new Map<string, SocketMeta>()
+
+async function roomMemberIds(io: SocketIOServer, roomId: string): Promise<Set<string>> {
+  const socks = await io.in(roomId).fetchSockets()
+  return new Set(socks.map((s) => s.id))
+}
+
 export function registerSocketHandlers(io: SocketIOServer) {
   io.on('connection', (socket) => {
     let joinedRoomId: string | null = null
@@ -77,7 +113,90 @@ export function registerSocketHandlers(io: SocketIOServer) {
       }
 
       socket.emit('room:state', { state: toPublicState(room), isOwner: isThisSocketOwner })
+      socketMetaById.set(socket.id, { roomId, isOwner: isThisSocketOwner })
       ack?.({ ok: true })
+    })
+
+    socket.on('webrtc:requestOffer', async (payload) => {
+      const parsed = webrtcRoomIdSchema.safeParse(payload)
+      if (!parsed.success) return
+      const { roomId } = parsed.data
+      const meta = socketMetaById.get(socket.id)
+      if (!meta || meta.roomId !== roomId || meta.isOwner) return
+      const room = getRoom(roomId)
+      if (!room?.ownerSocketId) return
+      const members = await roomMemberIds(io, roomId)
+      if (!members.has(socket.id) || !members.has(room.ownerSocketId)) return
+      io.to(room.ownerSocketId).emit('webrtc:requestOffer', { viewerSocketId: socket.id })
+    })
+
+    socket.on('webrtc:notifySharing', async (payload) => {
+      const parsed = webrtcRoomIdSchema.safeParse(payload)
+      if (!parsed.success) return
+      const { roomId } = parsed.data
+      const meta = socketMetaById.get(socket.id)
+      if (!meta || meta.roomId !== roomId || !meta.isOwner) return
+      const room = getRoom(roomId)
+      if (!room || room.ownerSocketId !== socket.id) return
+      const members = await roomMemberIds(io, roomId)
+      if (!members.has(socket.id)) return
+      socket.to(roomId).emit('webrtc:sharingOn')
+    })
+
+    socket.on('webrtc:notifySharingStopped', async (payload) => {
+      const parsed = webrtcRoomIdSchema.safeParse(payload)
+      if (!parsed.success) return
+      const { roomId } = parsed.data
+      const meta = socketMetaById.get(socket.id)
+      if (!meta || meta.roomId !== roomId || !meta.isOwner) return
+      const room = getRoom(roomId)
+      if (!room || room.ownerSocketId !== socket.id) return
+      io.to(roomId).emit('webrtc:sharingOff')
+    })
+
+    socket.on('webrtc:offer', async (payload) => {
+      const parsed = webrtcOfferSchema.safeParse(payload)
+      if (!parsed.success) return
+      const { roomId, targetSocketId, sdp } = parsed.data
+      const meta = socketMetaById.get(socket.id)
+      if (!meta || meta.roomId !== roomId || !meta.isOwner) return
+      const room = getRoom(roomId)
+      if (!room || room.ownerSocketId !== socket.id) return
+      if (targetSocketId === socket.id) return
+      const members = await roomMemberIds(io, roomId)
+      if (!members.has(socket.id) || !members.has(targetSocketId)) return
+      io.to(targetSocketId).emit('webrtc:offer', { sdp, fromSocketId: socket.id })
+    })
+
+    socket.on('webrtc:answer', async (payload) => {
+      const parsed = webrtcAnswerSchema.safeParse(payload)
+      if (!parsed.success) return
+      const { roomId, targetSocketId, sdp } = parsed.data
+      const meta = socketMetaById.get(socket.id)
+      if (!meta || meta.roomId !== roomId || meta.isOwner) return
+      const room = getRoom(roomId)
+      if (!room?.ownerSocketId || room.ownerSocketId !== targetSocketId) return
+      const members = await roomMemberIds(io, roomId)
+      if (!members.has(socket.id) || !members.has(targetSocketId)) return
+      io.to(targetSocketId).emit('webrtc:answer', { sdp, fromSocketId: socket.id })
+    })
+
+    socket.on('webrtc:candidate', async (payload) => {
+      const parsed = webrtcCandidateSchema.safeParse(payload)
+      if (!parsed.success) return
+      const { roomId, targetSocketId, candidate } = parsed.data
+      const meta = socketMetaById.get(socket.id)
+      if (!meta || meta.roomId !== roomId || targetSocketId === socket.id) return
+      const room = getRoom(roomId)
+      if (!room?.ownerSocketId) return
+      const members = await roomMemberIds(io, roomId)
+      if (!members.has(socket.id) || !members.has(targetSocketId)) return
+      if (meta.isOwner) {
+        if (targetSocketId === room.ownerSocketId) return
+      } else {
+        if (targetSocketId !== room.ownerSocketId) return
+      }
+      io.to(targetSocketId).emit('webrtc:candidate', { candidate, fromSocketId: socket.id })
     })
 
     socket.on('room:scroll', (payload) => {
@@ -128,6 +247,7 @@ export function registerSocketHandlers(io: SocketIOServer) {
     })
 
     socket.on('disconnect', () => {
+      socketMetaById.delete(socket.id)
       if (!joinedRoomId) return
       try {
         const room = requireRoom(joinedRoomId)

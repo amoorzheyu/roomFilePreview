@@ -11,6 +11,7 @@ import {
   Eye,
   EyeSlash,
   GithubLogo,
+  Monitor,
   PauseCircle,
   PencilSimple,
   PlayCircle,
@@ -28,6 +29,7 @@ import { clearContent, closeRoom, getRoomState, pdfUrl, setShare, uploadRoomCont
 import { GITHUB_REPO_URL } from '../lib/config'
 import { loadOwnerToken } from '../lib/roomTokens'
 import { createSocket } from '../lib/socket'
+import { useRoomDesktopShare } from '../hooks/useRoomDesktopShare'
 import { ContentAnnotations, type AnnotateTool } from '../components/ContentAnnotations'
 import { MdViewer } from '../components/MdViewer'
 import { PdfViewer } from '../components/PdfViewer'
@@ -65,13 +67,36 @@ export function RoomPage() {
   const ownerToken = useMemo(() => (roomId ? loadOwnerToken(roomId) : null), [roomId])
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+  const contentBodyRef = useRef<HTMLDivElement | null>(null)
   const applyingRemoteScrollRef = useRef(false)
   const stateRef = useRef<RoomPublicState | null>(null)
   const sockRef = useRef<ReturnType<typeof createSocket> | null>(null)
+  const [roomSocket, setRoomSocket] = useState<ReturnType<typeof createSocket> | null>(null)
   const scrollSendTimerRef = useRef<number | null>(null)
   const lastSentAtRef = useRef(0)
   const annotationEmitTimerRef = useRef<number | null>(null)
   const latestVersion = state?.contentMeta?.version ?? 0
+
+  const {
+    localVideoRef,
+    remoteVideoRef,
+    desktopError,
+    setDesktopError,
+    isHostSharing,
+    isReceivingDesktop,
+    startDesktopShare,
+    stopDesktopShare,
+  } = useRoomDesktopShare({
+    socket: roomSocket,
+    roomId,
+    isOwner,
+    enabled: status === 'ready' && Boolean(roomSocket),
+  })
+
+  const contentShowsDesktopOnly = useMemo(
+    () => (isOwner && isHostSharing) || (!isOwner && isReceivingDesktop),
+    [isOwner, isHostSharing, isReceivingDesktop],
+  )
 
   const [ownerAnnStrokes, setOwnerAnnStrokes] = useState<RoomAnnotationStroke[]>([])
   const [ownerAnnTexts, setOwnerAnnTexts] = useState<RoomAnnotationText[]>([])
@@ -143,7 +168,7 @@ export function RoomPage() {
   }, [])
 
   async function onToggleFullscreen() {
-    const el = scrollContainerRef.current
+    const el = contentBodyRef.current
     if (!el) return
 
     if (document.fullscreenElement) {
@@ -162,6 +187,7 @@ export function RoomPage() {
 
     const sock = createSocket()
     sockRef.current = sock
+    setRoomSocket(sock)
     const token = ownerToken ?? undefined
 
     sock.emit('room:join', { roomId, ownerToken: token }, () => {})
@@ -254,6 +280,7 @@ export function RoomPage() {
       scrollSendTimerRef.current = null
       if (annotationEmitTimerRef.current) window.clearTimeout(annotationEmitTimerRef.current)
       annotationEmitTimerRef.current = null
+      setRoomSocket(null)
       sockRef.current = null
       sock.disconnect()
     }
@@ -293,7 +320,7 @@ export function RoomPage() {
     return () => {
       el.removeEventListener('scroll', onScroll)
     }
-  }, [isOwner, roomId, state, status])
+  }, [isOwner, roomId, state, status, contentShowsDesktopOnly])
 
   const [uploadBusy, setUploadBusy] = useState(false)
   const [ownerActionError, setOwnerActionError] = useState<string | null>(null)
@@ -431,9 +458,9 @@ export function RoomPage() {
               <Broadcast size={14} weight="bold" className="text-steel" />
               {isOwner ? '房主' : '观众'}
             </div>
-            {state ? (
+                {state ? (
               <div className="text-xs text-steel">
-                {state.shareEnabled ? '共享中' : '已暂停'} · v{latestVersion}
+                {state.shareEnabled ? '文档同步中' : '文档已暂停'} · v{latestVersion}
               </div>
             ) : null}
           </div>
@@ -467,7 +494,15 @@ export function RoomPage() {
                 <div className="flex shrink-0 items-center justify-between border-b border-warm-charcoal px-5 py-4">
                   <div className="text-sm font-medium text-snow">内容</div>
                   <div className="flex items-center gap-3">
-                    <div className="text-xs text-steel">{state?.contentMeta ? state.contentMeta.name : ''}</div>
+                    <div className="text-xs text-steel">
+                      {contentShowsDesktopOnly
+                        ? isOwner
+                          ? '桌面投屏'
+                          : '接收房主桌面'
+                        : state?.contentMeta
+                          ? state.contentMeta.name
+                          : ''}
+                    </div>
                     <button
                       type="button"
                       onClick={onToggleMaximize}
@@ -493,47 +528,78 @@ export function RoomPage() {
                   </div>
                 </div>
 
-                <div
-                  ref={scrollContainerRef}
-                  className="min-h-0 flex-1 overflow-auto px-5 py-5"
-                >
-                  {!state?.contentMeta ? (
-                    <div className="grid gap-2 rounded-lg border border-warm-charcoal bg-abyss p-6">
-                      <div className="inline-flex items-center gap-2 text-sm font-semibold text-snow">
-                        <Eye size={18} weight="bold" className="text-steel" />
-                        暂无内容
+                <div ref={contentBodyRef} className="flex min-h-0 flex-1 flex-col">
+                  {contentShowsDesktopOnly ? (
+                    <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4">
+                      <div className="mb-2 shrink-0 text-xs font-medium text-steel">桌面投屏</div>
+                      <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border border-warm-charcoal bg-abyss">
+                        {isOwner ? (
+                          <video
+                            ref={localVideoRef}
+                            className="h-full w-full object-contain"
+                            autoPlay
+                            playsInline
+                            muted
+                          />
+                        ) : (
+                          <video
+                            ref={remoteVideoRef}
+                            className="h-full w-full object-contain"
+                            autoPlay
+                            playsInline
+                          />
+                        )}
                       </div>
+                      {!isOwner ? (
+                        <p className="mt-2 shrink-0 text-xs text-mint" role="status">
+                          正在接收房主桌面画面
+                        </p>
+                      ) : null}
                     </div>
-                  ) : contentType === 'md' ? (
-                    <ContentAnnotations
-                      tool={isOwner ? annotateTool : 'pan'}
-                      color={annotateColor}
-                      strokeWidth={annotateStroke}
-                      textFontSize={annotateTextSize}
-                      contentVersion={state.contentMeta.version}
-                      resetSeq={annotateResetSeq}
-                      strokes={annStrokes}
-                      texts={annTexts}
-                      readOnly={!isOwner}
-                      onAnnotationsChange={isOwner ? onAnnotationsChange : undefined}
-                    >
-                      <MdViewer roomId={roomId} version={state.contentMeta.version} />
-                    </ContentAnnotations>
                   ) : (
-                    <ContentAnnotations
-                      tool={isOwner ? annotateTool : 'pan'}
-                      color={annotateColor}
-                      strokeWidth={annotateStroke}
-                      textFontSize={annotateTextSize}
-                      contentVersion={state.contentMeta.version}
-                      resetSeq={annotateResetSeq}
-                      strokes={annStrokes}
-                      texts={annTexts}
-                      readOnly={!isOwner}
-                      onAnnotationsChange={isOwner ? onAnnotationsChange : undefined}
+                    <div
+                      ref={scrollContainerRef}
+                      className="min-h-0 flex-1 overflow-auto px-5 py-5"
                     >
-                      <PdfViewer url={pdfUrl(roomId)} version={state.contentMeta.version} />
-                    </ContentAnnotations>
+                      {!state?.contentMeta ? (
+                        <div className="grid gap-2 rounded-lg border border-warm-charcoal bg-abyss p-6">
+                          <div className="inline-flex items-center gap-2 text-sm font-semibold text-snow">
+                            <Eye size={18} weight="bold" className="text-steel" />
+                            暂无内容
+                          </div>
+                        </div>
+                      ) : contentType === 'md' ? (
+                        <ContentAnnotations
+                          tool={isOwner ? annotateTool : 'pan'}
+                          color={annotateColor}
+                          strokeWidth={annotateStroke}
+                          textFontSize={annotateTextSize}
+                          contentVersion={state.contentMeta.version}
+                          resetSeq={annotateResetSeq}
+                          strokes={annStrokes}
+                          texts={annTexts}
+                          readOnly={!isOwner}
+                          onAnnotationsChange={isOwner ? onAnnotationsChange : undefined}
+                        >
+                          <MdViewer roomId={roomId} version={state.contentMeta.version} />
+                        </ContentAnnotations>
+                      ) : (
+                        <ContentAnnotations
+                          tool={isOwner ? annotateTool : 'pan'}
+                          color={annotateColor}
+                          strokeWidth={annotateStroke}
+                          textFontSize={annotateTextSize}
+                          contentVersion={state.contentMeta.version}
+                          resetSeq={annotateResetSeq}
+                          strokes={annStrokes}
+                          texts={annTexts}
+                          readOnly={!isOwner}
+                          onAnnotationsChange={isOwner ? onAnnotationsChange : undefined}
+                        >
+                          <PdfViewer url={pdfUrl(roomId)} version={state.contentMeta.version} />
+                        </ContentAnnotations>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -568,12 +634,12 @@ export function RoomPage() {
                     )}
                     <div className="min-w-0">
                       <div className="text-sm font-semibold leading-snug text-snow">
-                        {state.shareEnabled ? '房主正在共享' : '房主已暂停共享'}
+                        {state.shareEnabled ? '房主正在同步文档' : '房主已暂停文档同步'}
                       </div>
                       <div className="mt-1 text-xs leading-relaxed text-parchment">
                         {state.shareEnabled
-                          ? '滚动将与房主同步。'
-                          : '滚动不再与房主同步；当前页面内容仍保留。'}
+                          ? 'PDF/Markdown 滚动与标注与房主同步；与桌面投屏无关。'
+                          : '文档滚动不再与房主同步；桌面画面在左侧「内容」区显示。'}
                       </div>
                     </div>
                   </div>
@@ -586,6 +652,15 @@ export function RoomPage() {
                 }`}
               >
                 <div className="text-sm font-medium text-snow">控制</div>
+                {isOwner ? (
+                  <p className="mt-1 text-xs leading-relaxed text-parchment">
+                   
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs leading-relaxed text-parchment">
+                    文档、标注与桌面画面均在左侧「内容」区。
+                  </p>
+                )}
 
                 {isOwner ? (
                   <div className="mt-4 grid gap-3">
@@ -605,31 +680,59 @@ export function RoomPage() {
                       />
                     </label>
 
-                    <button
-                      type="button"
-                      onClick={() => onToggleShare(!state?.shareEnabled)}
-                      className="inline-flex w-full items-center rounded-md border border-warm-charcoal bg-carbon px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        {state?.shareEnabled ? (
-                          <EyeSlash size={18} weight="bold" />
-                        ) : (
-                          <Eye size={18} weight="bold" />
-                        )}
-                        {state?.shareEnabled ? '暂停共享' : '继续共享'}
-                      </span>
-                    </button>
+                    <div className="grid gap-2 border-t border-warm-charcoal pt-3">
+                      <div className="text-xs font-medium text-steel">桌面投屏</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDesktopError(null)
+                          if (isHostSharing) stopDesktopShare()
+                          else void startDesktopShare()
+                        }}
+                        title={isHostSharing ? '结束当前桌面共享后可重新选择' : '在系统对话框中选择要共享的屏幕或窗口'}
+                        className={`inline-flex w-full items-center justify-center gap-2 rounded-md border px-4 py-3 text-sm font-semibold transition active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                          isHostSharing
+                            ? 'border-warm-charcoal bg-abyss text-snow hover:bg-black/30'
+                            : 'border-signal/50 bg-abyss text-mint hover:bg-black/30'
+                        }`}
+                      >
+                        <Monitor size={18} weight="bold" />
+                        选择桌面
+                      </button>
+                      {desktopError ? (
+                        <div className="rounded-lg border border-danger-border bg-danger-bg px-4 py-3 text-xs text-danger">
+                          {desktopError}
+                        </div>
+                      ) : null}
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={onClear}
-                      className="inline-flex w-full items-center justify-between rounded-md border border-warm-charcoal bg-abyss px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/30 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <X size={18} weight="bold" />
-                        清空内容
-                      </span>
-                    </button>
+                    <div className="grid gap-2 border-t border-warm-charcoal pt-3">
+                      <button
+                        type="button"
+                        onClick={() => onToggleShare(!state?.shareEnabled)}
+                        className="inline-flex w-full items-center rounded-md border border-warm-charcoal bg-carbon px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/20 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          {state?.shareEnabled ? (
+                            <EyeSlash size={18} weight="bold" />
+                          ) : (
+                            <Eye size={18} weight="bold" />
+                          )}
+                          {state?.shareEnabled ? '暂停共享' : '继续共享'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={onClear}
+                        className="inline-flex w-full items-center justify-between rounded-md border border-warm-charcoal bg-abyss px-4 py-3 text-sm font-semibold text-snow transition hover:bg-black/30 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <X size={18} weight="bold" />
+                          清空内容
+                        </span>
+                      </button>
+                    </div>
 
                     <button
                       type="button"
@@ -649,8 +752,8 @@ export function RoomPage() {
                     ) : null}
                   </div>
                 ) : (
-                  <div className="mt-4 rounded-lg border border-warm-charcoal bg-abyss p-4 text-sm text-parchment">
-                    仅查看
+                  <div className="mt-4 rounded-lg border border-warm-charcoal bg-abyss p-3 text-sm text-parchment">
+                    仅查看；文档、标注与桌面画面在左侧「内容」区。
                   </div>
                 )}
               </div>
