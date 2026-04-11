@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { GlobalWorkerOptions, getDocument, type PDFDocumentProxy } from 'pdfjs-dist'
 import workerSrc from 'pdfjs-dist/build/pdf.worker.mjs?url'
 
@@ -19,6 +19,8 @@ export function PdfViewer(props: Props) {
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [pages, setPages] = useState<PageCanvas[]>([])
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const canvasByPageRef = useRef<Map<number, HTMLCanvasElement | null>>(new Map())
+  const [containerWidth, setContainerWidth] = useState(0)
 
   const cacheKey = useMemo(() => `${url}?v=${version}`, [url, version])
 
@@ -59,13 +61,32 @@ export function PdfViewer(props: Props) {
     }
   }, [cacheKey])
 
+  useLayoutEffect(() => {
+    const el = rootRef.current
+    if (!el || status !== 'ready') return
+
+    const measure = () => {
+      const w = el.clientWidth
+      setContainerWidth((prev) => (prev === w ? prev : w))
+    }
+
+    measure()
+    const ro = new ResizeObserver(() => {
+      measure()
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+    }
+  }, [status, doc, pages.length])
+
   useEffect(() => {
-    if (!doc) return
-    if (!rootRef.current) return
+    if (!doc || status !== 'ready') return
+    if (containerWidth <= 0) return
 
     let cancelled = false
     const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1))
-    const targetCssWidth = Math.min(980, rootRef.current.clientWidth)
+    const targetCssWidth = Math.max(200, Math.min(980, containerWidth))
 
     ;(async () => {
       for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
@@ -83,7 +104,7 @@ export function PdfViewer(props: Props) {
           ),
         )
 
-        const canvas = pages.find((p) => p.pageNumber === pageNumber)?.ref
+        const canvas = canvasByPageRef.current.get(pageNumber)
         if (!canvas) continue
         const ctx = canvas.getContext('2d', { alpha: false })
         if (!ctx) continue
@@ -106,8 +127,7 @@ export function PdfViewer(props: Props) {
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doc, version, url])
+  }, [doc, version, url, status, containerWidth])
 
   if (status === 'loading') {
     return (
@@ -124,14 +144,16 @@ export function PdfViewer(props: Props) {
   }
 
   return (
-    <div ref={rootRef} className="grid gap-5">
+    <div ref={rootRef} className="grid w-full min-w-0 gap-5">
       {pages.map((p) => (
-        <div key={p.pageNumber} className="grid justify-center">
+        <div key={p.pageNumber} className="grid w-full min-w-0 justify-center">
           <canvas
             ref={(el) => {
               p.ref = el
+              if (el) canvasByPageRef.current.set(p.pageNumber, el)
+              else canvasByPageRef.current.delete(p.pageNumber)
             }}
-            className="rounded-lg bg-white shadow-dramatic"
+            className="max-w-full rounded-lg bg-white shadow-dramatic"
           />
         </div>
       ))}

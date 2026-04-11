@@ -365,6 +365,9 @@ export function RoomPage() {
       setOwnerActionError('缺少房主 token，无法上传 请从创建房间的那台设备进入')
       return
     }
+    if (isHostSharing) {
+      stopDesktopShare()
+    }
     setOwnerActionError(null)
     setUploadBusy(true)
     try {
@@ -479,19 +482,19 @@ export function RoomPage() {
             {error ?? '加载失败'}
           </div>
         ) : (
-          <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[0.72fr_0.28fr]">
+          <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,0.28fr)]">
             <div
               className={
                 isMaximized
-                  ? 'fixed inset-0 z-40 grid bg-abyss/95 p-4 backdrop-blur-sm md:p-6'
-                  : 'flex min-h-0 flex-col lg:h-full lg:min-h-0'
+                  ? 'fixed inset-0 z-40 grid min-w-0 bg-abyss/95 p-4 backdrop-blur-sm md:p-6'
+                  : 'flex min-h-0 min-w-0 flex-col lg:h-full lg:min-h-0'
               }
             >
               <div
                 className={
                   isMaximized
-                    ? 'flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-warm-charcoal bg-carbon shadow-dramatic'
-                    : 'flex min-h-0 flex-1 flex-col rounded-lg border border-warm-charcoal bg-carbon shadow-ambient'
+                    ? 'flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-warm-charcoal bg-carbon shadow-dramatic'
+                    : 'flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-warm-charcoal bg-carbon shadow-ambient'
                 }
               >
                 <div className="flex shrink-0 items-center justify-between border-b border-warm-charcoal px-5 py-4">
@@ -558,7 +561,7 @@ export function RoomPage() {
                   ) : (
                     <div
                       ref={scrollContainerRef}
-                      className="min-h-0 flex-1 overflow-auto px-5 py-5"
+                      className="min-h-0 min-w-0 flex-1 overflow-auto px-5 py-5"
                     >
                       {!state?.contentMeta ? (
                         <div className="grid gap-2 rounded-lg border border-warm-charcoal bg-abyss p-6">
@@ -604,7 +607,7 @@ export function RoomPage() {
               </div>
             </div>
 
-            <div className="grid min-h-0 gap-4">
+            <div className="grid min-h-0 min-w-0 gap-4">
               {!isOwner && state ? (
                 <div
                   className={`rounded-lg p-4 shadow-ambient ${
