@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -7,21 +7,39 @@ import {
   CornersIn,
   CornersOut,
   Broadcast,
+  Cursor,
   Eye,
   EyeSlash,
   GithubLogo,
   PauseCircle,
+  PencilSimple,
   PlayCircle,
+  TextT,
+  Trash,
   X,
 } from '@phosphor-icons/react'
 
-import type { RoomPublicState } from '../lib/api'
+import type {
+  RoomAnnotationStroke,
+  RoomAnnotationText,
+  RoomPublicState,
+} from '../lib/api'
 import { clearContent, closeRoom, getRoomState, pdfUrl, setShare, uploadRoomContent } from '../lib/api'
 import { GITHUB_REPO_URL } from '../lib/config'
 import { loadOwnerToken } from '../lib/roomTokens'
 import { createSocket } from '../lib/socket'
+import { ContentAnnotations, type AnnotateTool } from '../components/ContentAnnotations'
 import { MdViewer } from '../components/MdViewer'
 import { PdfViewer } from '../components/PdfViewer'
+
+const ANNOTATE_COLORS = [
+  { hex: '#00d992', label: 'Signal' },
+  { hex: '#2fd6a1', label: 'Mint' },
+  { hex: '#818cf8', label: 'Indigo' },
+  { hex: '#f2f2f2', label: 'Snow' },
+  { hex: '#fb565b', label: 'Coral' },
+  { hex: '#ffba00', label: 'Amber' },
+] as const
 
 function normalizeRoomId(input: string) {
   return input.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
@@ -52,11 +70,28 @@ export function RoomPage() {
   const sockRef = useRef<ReturnType<typeof createSocket> | null>(null)
   const scrollSendTimerRef = useRef<number | null>(null)
   const lastSentAtRef = useRef(0)
+  const annotationEmitTimerRef = useRef<number | null>(null)
   const latestVersion = state?.contentMeta?.version ?? 0
+
+  const [ownerAnnStrokes, setOwnerAnnStrokes] = useState<RoomAnnotationStroke[]>([])
+  const [ownerAnnTexts, setOwnerAnnTexts] = useState<RoomAnnotationText[]>([])
 
   useEffect(() => {
     stateRef.current = state
   }, [state])
+
+  useEffect(() => {
+    if (!isOwner || !state?.contentMeta) return
+    const v = state.contentMeta.version
+    const a = state.annotations
+    if (a && a.contentVersion === v) {
+      setOwnerAnnStrokes(a.strokes)
+      setOwnerAnnTexts(a.texts)
+    } else {
+      setOwnerAnnStrokes([])
+      setOwnerAnnTexts([])
+    }
+  }, [isOwner, state?.contentMeta?.version, state?.annotations])
 
   useEffect(() => {
     if (roomId.length !== 6) {
@@ -192,6 +227,20 @@ export function RoomPage() {
       }, 0)
     })
 
+    sock.on('room:annotationsSync', (payload) => {
+      setState((prev) => {
+        if (!prev?.contentMeta || prev.contentMeta.version !== payload.version) return prev
+        return {
+          ...prev,
+          annotations: {
+            contentVersion: payload.version,
+            strokes: payload.strokes,
+            texts: payload.texts,
+          },
+        }
+      })
+    })
+
     sock.on('room:closed', () => {
       nav('/', { replace: true })
     })
@@ -203,6 +252,8 @@ export function RoomPage() {
     return () => {
       if (scrollSendTimerRef.current) window.clearTimeout(scrollSendTimerRef.current)
       scrollSendTimerRef.current = null
+      if (annotationEmitTimerRef.current) window.clearTimeout(annotationEmitTimerRef.current)
+      annotationEmitTimerRef.current = null
       sockRef.current = null
       sock.disconnect()
     }
@@ -246,6 +297,40 @@ export function RoomPage() {
 
   const [uploadBusy, setUploadBusy] = useState(false)
   const [ownerActionError, setOwnerActionError] = useState<string | null>(null)
+
+  const [annotateTool, setAnnotateTool] = useState<AnnotateTool>('pan')
+  const [annotateColor, setAnnotateColor] = useState<string>(ANNOTATE_COLORS[0].hex)
+  const [annotateStroke, setAnnotateStroke] = useState(3)
+  const [annotateTextSize, setAnnotateTextSize] = useState(16)
+  const [annotateResetSeq, setAnnotateResetSeq] = useState(0)
+
+  const flushAnnotationsToServer = useCallback(
+    (strokes: RoomAnnotationStroke[], texts: RoomAnnotationText[]) => {
+      const sock = sockRef.current
+      const st = stateRef.current
+      if (!sock || !st?.contentMeta) return
+      sock.emit('room:annotationsSet', {
+        roomId,
+        version: st.contentMeta.version,
+        strokes,
+        texts,
+      })
+    },
+    [roomId],
+  )
+
+  const onAnnotationsChange = useCallback(
+    (next: { strokes: RoomAnnotationStroke[]; texts: RoomAnnotationText[] }) => {
+      setOwnerAnnStrokes(next.strokes)
+      setOwnerAnnTexts(next.texts)
+      if (annotationEmitTimerRef.current) window.clearTimeout(annotationEmitTimerRef.current)
+      annotationEmitTimerRef.current = window.setTimeout(() => {
+        annotationEmitTimerRef.current = null
+        flushAnnotationsToServer(next.strokes, next.texts)
+      }, 380)
+    },
+    [flushAnnotationsToServer],
+  )
 
   async function onUpload(file: File) {
     if (!ownerToken) {
@@ -298,6 +383,16 @@ export function RoomPage() {
   }
 
   const contentType = state?.contentMeta?.type
+
+  const viewerAnn = useMemo(() => {
+    if (isOwner) return null
+    if (!state?.contentMeta || !state.annotations) return null
+    if (state.annotations.contentVersion !== state.contentMeta.version) return null
+    return state.annotations
+  }, [isOwner, state?.contentMeta, state?.annotations])
+
+  const annStrokes = isOwner ? ownerAnnStrokes : (viewerAnn?.strokes ?? [])
+  const annTexts = isOwner ? ownerAnnTexts : (viewerAnn?.texts ?? [])
 
   return (
     <div className="flex min-h-[100dvh] flex-col lg:h-[100dvh] lg:max-h-[100dvh] lg:overflow-hidden">
@@ -410,9 +505,35 @@ export function RoomPage() {
                       </div>
                     </div>
                   ) : contentType === 'md' ? (
-                    <MdViewer roomId={roomId} version={state.contentMeta.version} />
+                    <ContentAnnotations
+                      tool={isOwner ? annotateTool : 'pan'}
+                      color={annotateColor}
+                      strokeWidth={annotateStroke}
+                      textFontSize={annotateTextSize}
+                      contentVersion={state.contentMeta.version}
+                      resetSeq={annotateResetSeq}
+                      strokes={annStrokes}
+                      texts={annTexts}
+                      readOnly={!isOwner}
+                      onAnnotationsChange={isOwner ? onAnnotationsChange : undefined}
+                    >
+                      <MdViewer roomId={roomId} version={state.contentMeta.version} />
+                    </ContentAnnotations>
                   ) : (
-                    <PdfViewer url={pdfUrl(roomId)} version={state.contentMeta.version} />
+                    <ContentAnnotations
+                      tool={isOwner ? annotateTool : 'pan'}
+                      color={annotateColor}
+                      strokeWidth={annotateStroke}
+                      textFontSize={annotateTextSize}
+                      contentVersion={state.contentMeta.version}
+                      resetSeq={annotateResetSeq}
+                      strokes={annStrokes}
+                      texts={annTexts}
+                      readOnly={!isOwner}
+                      onAnnotationsChange={isOwner ? onAnnotationsChange : undefined}
+                    >
+                      <PdfViewer url={pdfUrl(roomId)} version={state.contentMeta.version} />
+                    </ContentAnnotations>
                   )}
                 </div>
               </div>
@@ -534,8 +655,110 @@ export function RoomPage() {
                 )}
               </div>
 
-              <div className="rounded-lg border border-warm-charcoal bg-carbon p-5 text-xs text-steel shadow-ambient">
-                滚动跟随房主
+              <div
+                className={`rounded-lg border bg-carbon p-5 shadow-ambient ${
+                  isOwner && annotateTool !== 'pan' ? 'border-2 border-signal' : 'border-warm-charcoal'
+                }`}
+              >
+                <div className="text-sm font-medium text-snow">内容标注</div>
+                {isOwner ? (
+                  <>
+                    <p className="mt-1 text-xs leading-relaxed text-parchment">
+                      在左侧预览上叠加手写与文字；浏览模式下可正常滚动。标注会同步给观众。切换内容或上传新版本会清空标注。
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap gap-2" role="toolbar" aria-label="标注工具">
+                      {(
+                        [
+                          { id: 'pan' as const, label: '浏览', Icon: Cursor },
+                          { id: 'draw' as const, label: '手写', Icon: PencilSimple },
+                          { id: 'text' as const, label: '文字', Icon: TextT },
+                        ] as const
+                      ).map(({ id, label, Icon }) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setAnnotateTool(id)}
+                          className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                            annotateTool === id
+                              ? 'border-signal bg-abyss text-mint shadow-[0_0_12px_rgba(0,217,146,0.18)]'
+                              : 'border-warm-charcoal bg-abyss text-snow hover:bg-black/30'
+                          }`}
+                        >
+                          <Icon size={16} weight="bold" />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="mt-4">
+                      <div className="text-xs font-medium text-steel">颜色</div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {ANNOTATE_COLORS.map((c) => (
+                          <button
+                            key={c.hex}
+                            type="button"
+                            title={c.label}
+                            onClick={() => setAnnotateColor(c.hex)}
+                            className={`h-8 w-8 rounded-md border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                              annotateColor === c.hex ? 'border-signal ring-1 ring-signal/40' : 'border-warm-charcoal'
+                            }`}
+                            style={{ backgroundColor: c.hex }}
+                            aria-label={c.label}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <label className="mt-4 grid gap-2">
+                      <span className="text-xs font-medium text-steel">笔迹粗细 · {annotateStroke}px</span>
+                      <input
+                        type="range"
+                        min={2}
+                        max={16}
+                        step={1}
+                        value={annotateStroke}
+                        onChange={(e) => setAnnotateStroke(Number(e.target.value))}
+                        className="h-2 w-full cursor-pointer accent-[#00d992]"
+                      />
+                    </label>
+
+                    <label className="mt-4 grid gap-2">
+                      <span className="text-xs font-medium text-steel">文字大小 · {annotateTextSize}px</span>
+                      <input
+                        type="range"
+                        min={12}
+                        max={40}
+                        step={1}
+                        value={annotateTextSize}
+                        onChange={(e) => setAnnotateTextSize(Number(e.target.value))}
+                        className="h-2 w-full cursor-pointer accent-[#00d992]"
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAnnotateResetSeq((n) => n + 1)
+                        setOwnerAnnStrokes([])
+                        setOwnerAnnTexts([])
+                        if (annotationEmitTimerRef.current) {
+                          window.clearTimeout(annotationEmitTimerRef.current)
+                          annotationEmitTimerRef.current = null
+                        }
+                        flushAnnotationsToServer([], [])
+                      }}
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-warm-charcoal bg-abyss px-3 py-2.5 text-xs font-semibold text-parchment transition hover:border-danger-border hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                    >
+                      <Trash size={16} weight="bold" />
+                      清空标注
+                    </button>
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs leading-relaxed text-parchment">
+                    实时显示房主同步的手写与文字标注；你可滚动预览对照内容。
+                  </p>
+                )}
               </div>
             </div>
           </div>

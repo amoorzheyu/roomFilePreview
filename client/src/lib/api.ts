@@ -2,12 +2,36 @@ import { SERVER_HTTP_BASE } from './config'
 
 export type CreateRoomResponse = { roomId: string; ownerToken: string }
 
+export type RoomAnnotationStroke = {
+  id: string
+  points: [number, number][]
+  color: string
+  width: number
+}
+
+export type RoomAnnotationText = {
+  id: string
+  x: number
+  y: number
+  text: string
+  color: string
+  /** 像素字号；旧数据缺省由客户端按 14 渲染 */
+  fontSize?: number
+}
+
+export type RoomAnnotationsSnapshot = {
+  contentVersion: number
+  strokes: RoomAnnotationStroke[]
+  texts: RoomAnnotationText[]
+}
+
 export type RoomPublicState = {
   roomId: string
   hasOwner: boolean
   shareEnabled: boolean
   contentMeta?: { type: 'pdf' | 'md'; name: string; version: number }
   scroll: { kind: 'pdf' | 'md'; ratio: number; updatedAt: number }
+  annotations?: RoomAnnotationsSnapshot
 }
 
 export async function createRoom(): Promise<CreateRoomResponse> {

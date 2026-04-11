@@ -6,6 +6,7 @@ import {
   getRoom,
   isOwner,
   requireRoom,
+  setAnnotations,
   setScroll,
   toPublicState,
 } from '../rooms/store.js'
@@ -24,6 +25,28 @@ const scrollSchema = z.object({
 
 const closeSchema = z.object({
   roomId: z.string().min(1),
+})
+
+const pointTuple = z.tuple([z.number(), z.number()])
+const strokeSchema = z.object({
+  id: z.string().max(128),
+  points: z.array(pointTuple).max(16000),
+  color: z.string().max(32),
+  width: z.number().min(0.5).max(80),
+})
+const textAnnSchema = z.object({
+  id: z.string().max(128),
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  text: z.string().max(8000),
+  color: z.string().max(32),
+  fontSize: z.number().min(8).max(96).optional(),
+})
+const annotationsSetSchema = z.object({
+  roomId: z.string().min(1),
+  version: z.number().int().nonnegative(),
+  strokes: z.array(strokeSchema).max(2000),
+  texts: z.array(textAnnSchema).max(600),
 })
 
 export function registerSocketHandlers(io: SocketIOServer) {
@@ -73,6 +96,24 @@ export function registerSocketHandlers(io: SocketIOServer) {
 
       setScroll(room, { kind, ratio, updatedAt: Date.now() })
       socket.to(roomId).emit('room:scrollSync', { kind, ratio, version })
+    })
+
+    socket.on('room:annotationsSet', (payload) => {
+      const parsed = annotationsSetSchema.safeParse(payload)
+      if (!parsed.success) return
+
+      const { roomId, version, strokes, texts } = parsed.data
+      const room = getRoom(roomId)
+      if (!room) return
+      if (!room.shareEnabled) return
+      if (room.ownerSocketId !== socket.id && !isThisSocketOwner) return
+
+      const contentVersion = room.content?.version ?? 0
+      if (contentVersion !== version) return
+
+      const ok = setAnnotations(room, { contentVersion: version, strokes, texts })
+      if (!ok) return
+      socket.to(roomId).emit('room:annotationsSync', { version, strokes, texts })
     })
 
     socket.on('room:close', (payload) => {
