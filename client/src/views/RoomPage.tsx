@@ -10,6 +10,8 @@ import {
   Eye,
   EyeSlash,
   GithubLogo,
+  PauseCircle,
+  PlayCircle,
   UploadSimple,
   X,
 } from '@phosphor-icons/react'
@@ -418,6 +420,46 @@ export function RoomPage() {
             </div>
 
             <div className="grid gap-4">
+              {!isOwner && state ? (
+                <div
+                  className={`rounded-lg p-4 shadow-ambient ${
+                    state.shareEnabled
+                      ? 'border-2 border-signal bg-carbon'
+                      : 'border border-[rgba(255,186,0,0.38)] bg-[rgba(255,186,0,0.07)]'
+                  }`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div className="flex items-start gap-3">
+                    {state.shareEnabled ? (
+                      <PlayCircle
+                        size={22}
+                        weight="bold"
+                        className="mt-0.5 shrink-0 text-mint"
+                        aria-hidden
+                      />
+                    ) : (
+                      <PauseCircle
+                        size={22}
+                        weight="bold"
+                        className="mt-0.5 shrink-0 text-[#ffba00]"
+                        aria-hidden
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold leading-snug text-snow">
+                        {state.shareEnabled ? '房主正在共享' : '房主已暂停共享'}
+                      </div>
+                      <div className="mt-1 text-xs leading-relaxed text-parchment">
+                        {state.shareEnabled
+                          ? '滚动将与房主同步。'
+                          : '滚动不再与房主同步；当前页面内容仍保留。'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               <div
                 className={`rounded-lg border bg-carbon p-5 shadow-ambient ${
                   state?.shareEnabled ? 'border-signal border-2' : 'border-warm-charcoal'
