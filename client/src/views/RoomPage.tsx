@@ -717,7 +717,7 @@ export function RoomPage() {
                         }`}
                       >
                         <Monitor size={18} weight="bold" />
-                        选择桌面
+                        {isHostSharing ? '取消桌面共享' : '共享桌面'}
                       </button>
                       {desktopError ? (
                         <div className="rounded-lg border border-danger-border bg-danger-bg px-4 py-3 text-xs text-danger">
